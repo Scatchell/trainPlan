@@ -13,9 +13,9 @@
     "manTest": "./node_modules/lambda-local/bin/lambda-local -l index.js -h handler -e example-requests/successful-assistant-request.js -v 3",
     "test": "/Users/ascatche/sideProjects/googleHome/the-poet/node_modules/jasmine/bin/jasmine.js"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
+    "jasmine": "^2.9.0",
     "lambda-local": "^1.4.5"
   }
 }

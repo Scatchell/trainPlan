@@ -1,5 +1,6 @@
 'use strict';
 const https = require('https');
+const TrainStatusParser = require('./src/TrainStatusParser').TrainStatusParser;
 
 exports.handler = function (event, context, callback) {
 
@@ -23,18 +24,6 @@ exports.handler = function (event, context, callback) {
 
     function respondWithTrainStatus() {
 
-        function getTrainStatusFromResponse(responseBody) {
-            console.log('BODY: ' + responseBody);
-            let transportApiJsonRes = JSON.parse(responseBody);
-
-            let originalDepartureTime = transportApiJsonRes.departures.all[0].aimed_departure_time;
-            let actualDepartureTime = transportApiJsonRes.departures.all[0].expected_departure_time;
-            return "The train meant for: " + originalDepartureTime + " is actually arriving at " + actualDepartureTime;
-        }
-
-
-
-
         const appId = process.env.APP_ID;
         const appKey = process.env.APP_KEY;
         const options = {
@@ -52,7 +41,7 @@ exports.handler = function (event, context, callback) {
                 bodyChunks.push(chunk);
             }).on('end', function () {
                 const body = Buffer.concat(bodyChunks);
-                callback(null, {"speech": getTrainStatusFromResponse(body)});
+                callback(null, {"speech": TrainStatusParser().getTrainStatusFromResponse(body)});
             })
         });
 
