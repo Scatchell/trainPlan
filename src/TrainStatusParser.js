@@ -16,15 +16,20 @@ exports.TrainStatusParser = function () {
                 return "There are no trains currently running!";
             }
 
-            let originalDepartureTime = filteredDepartures[0].aimed_departure_time;
-            let actualDepartureTime = filteredDepartures[0].expected_departure_time;
+            let response = "";
+            filteredDepartures.forEach(function (filteredDeparture, index) {
+                let originalDepartureTime = filteredDeparture.aimed_departure_time;
+                let actualDepartureTime = filteredDeparture.expected_departure_time;
 
-            let response = "The train meant for: " + originalDepartureTime;
-            if (originalDepartureTime === actualDepartureTime) {
-                response += " is on time!"
-            } else {
-                response += " is actually arriving at " + actualDepartureTime;
-            }
+                let prefixResponse = index === 0 ? "The train meant for: " : ", and the train meant for: ";
+                response += prefixResponse + originalDepartureTime;
+                if (originalDepartureTime === actualDepartureTime) {
+                    response += " is on time!"
+                } else {
+                    response += " is actually arriving at " + actualDepartureTime;
+                }
+            });
+
             return response;
         }
     };
