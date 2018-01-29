@@ -1,0 +1,19 @@
+{
+  "name": "trainDayPlanner",
+  "description": "Plan your day!",
+  "version": "0.0.1",
+  "private": true,
+  "license": "Apache Version 2.0",
+  "author": "Anthony Scatchell",
+  "engines": {
+    "node": "~6.10"
+  },
+  "scripts": {
+    "lint": "semistandard --fix \"**/*.js\"",
+    "test": "/Users/ascatche/sideProjects/googleHome/the-poet/node_modules/jasmine/bin/jasmine.js"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "lambda-local": "^1.4.5"
+  }
+}
