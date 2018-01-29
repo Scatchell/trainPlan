@@ -10,9 +10,11 @@
   },
   "scripts": {
     "lint": "semistandard --fix \"**/*.js\"",
+    "manTest": "./node_modules/lambda-local/bin/lambda-local -l index.js -h handler -e example-requests/successful-assistant-request.js -v 3",
     "test": "/Users/ascatche/sideProjects/googleHome/the-poet/node_modules/jasmine/bin/jasmine.js"
   },
-  "dependencies": {},
+  "dependencies": {
+  },
   "devDependencies": {
     "lambda-local": "^1.4.5"
   }

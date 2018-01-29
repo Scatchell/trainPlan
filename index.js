@@ -1,59 +1,63 @@
 'use strict';
-let http = require('http');
-let starWarsAPI = `www.swapi.co`;
+const https = require('https');
 
-exports.handler = function(event, context, callback) {
+exports.handler = function (event, context, callback) {
 
-	console.log("event result:" );
-	console.log(event);
-	try {
-		let intentName = event.result.metadata.intentName
+    console.log("event result:");
+    console.log(event);
+    try {
+        let intentName = event.result.metadata.intentName;
 
-		if(intentName === "TrainLateIntent") {
-			callback(null, {"speech": "You'll be fine!"})
-		} else {
-			callback(null, {"speech": "Sorry, I don't understand that. Try again!"})
-		}
-	} catch (e) {
-		if(e instanceof TypeError) {
-			callback(null, {"speech": "Sorry, something went wrong with the request! Maybe it was formatted incorrectly."});
-		}
-		callback(null, {"speech": "Sorry, something went wrong!"})
-	}
-}
+        console.log('intentName: ' + intentName);
+        if (intentName === "TrainLateIntent") {
+            respondWithTrainStatus();
+        } else {
+            callback(null, {"speech": "Sorry, I don't understand that. Try again!"})
+        }
+    } catch (e) {
+        if (e instanceof TypeError) {
+            callback(null, {"speech": "Sorry, something went wrong with the request! Maybe it was formatted incorrectly."});
+        }
+        callback(null, {"speech": "Sorry, something went wrong!"})
+    }
 
-//let options = searchPeopleRequestOptions(firstName, lastName);
+    function respondWithTrainStatus() {
 
-//   makeRequest(options, function( data, error) {
-//     let person = data.results[0];
-//     if (person) {
-//         let height = person.height;
-//         let response = person.name + " is " + height + " centimeters tall.";
-//         callback(null, {"speech": response});
-//     }
-//     else {
-//         callback(null, {"speech": "I'm not sure!"});
-//     }
-//   });
+        function getTrainStatusFromResponse(responseBody) {
+            console.log('BODY: ' + responseBody);
+            let transportApiJsonRes = JSON.parse(responseBody);
 
-function searchPeopleRequestOptions(firstName, lastName) {
-	return {
-		host: starWarsAPI,
-		path: `/api/people/?search=`+firstName+'+'+lastName
-	};
-}
+            let originalDepartureTime = transportApiJsonRes.departures.all[0].aimed_departure_time;
+            let actualDepartureTime = transportApiJsonRes.departures.all[0].expected_departure_time;
+            return "The train meant for: " + originalDepartureTime + " is actually arriving at " + actualDepartureTime;
+        }
 
-function makeRequest(options, callback) {
-	var request = http.request(options,
-		function(response) {
-			var responseString = '';
-			response.on('data', function(data) {
-				responseString += data;
-			});
-			response.on('end', function() {
-				var responseJSON = JSON.parse(responseString);
-				callback(responseJSON, null);
-			});
-		});
-	request.end();
-}
+
+
+
+        const appId = process.env.APP_ID;
+        const appKey = process.env.APP_KEY;
+        const options = {
+            host: 'transportapi.com',
+            path: "/v3/uk/train/station/MAN/live.json?app_id=" + appId + "&app_key=" + appKey + "&calling_at=LPY&darwin=false&train_status=passenger"
+        };
+
+        const req = https.get(options, function (res) {
+            console.log('STATUS: ' + res.statusCode);
+
+            // Buffer the body entirely for processing as a whole.
+            let bodyChunks = [];
+            res.on('data', function (chunk) {
+                // You can process streamed parts here...
+                bodyChunks.push(chunk);
+            }).on('end', function () {
+                const body = Buffer.concat(bodyChunks);
+                callback(null, {"speech": getTrainStatusFromResponse(body)});
+            })
+        });
+
+        req.on('error', function (e) {
+            console.log('ERROR: ' + e.message);
+        });
+    }
+};
