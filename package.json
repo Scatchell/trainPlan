@@ -14,7 +14,9 @@
     "test": "/Users/ascatche/sideProjects/googleHome/trainDayPlanner/node_modules/jasmine/bin/jasmine.js",
     "awsShip": "zip -r trainDayPlanner.zip ./* && aws lambda update-function-code --function-name trainDayPlanner --zip-file fileb://./trainDayPlanner.zip --profile prod.train-planner --region eu-west-2"
   },
-  "dependencies": {},
+  "dependencies": {
+    "moment": "^2.20.1"
+  },
   "devDependencies": {
     "jasmine": "^2.9.0",
     "lambda-local": "^1.4.5"

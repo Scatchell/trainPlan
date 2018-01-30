@@ -56,7 +56,20 @@ describe("TrainStatusParser", function () {
     });
 
     it("should ignore trains not meant to leave at 7:34 or 8:07", function () {
-        let trainJson = `{"date":"2018-01-29","time_of_day":"22:26","request_time":"2018-01-29T22:26:29+00:00","station_name":"Manchester Piccadilly","station_code":"MAN","departures":{"all":[{"mode":"train","service":"21731000","train_uid":"Y81771","platform":"14","operator":"TP","operator_name":"First TransPennine Express","aimed_departure_time":"06:34","aimed_arrival_time":"23:05","aimed_pass_time":null,"origin_name":"Newcastle","destination_name":"Liverpool Lime Street (High Level)","source":"Network Rail","category":"XX","service_timetable":{"id":"https://transportapi.com/v3/uk/train/service/train_uid:Y81771/2018-01-29/timetable.json?app_id=f3857c5d&app_key=353694b8cadf984328fd5eff095f60a9&live=true"},"status":"LATE","expected_arrival_time":"23:06","expected_departure_time":"07:34","best_arrival_estimate_mins":39,"best_departure_estimate_mins":41}]}}`;
+        let trainJson = `{
+                          "station_name": "Manchester Piccadilly",
+                          "station_code": "MAN",
+                          "departures": {
+                            "all": [
+                              {
+                                "aimed_departure_time": "06:34",
+                                "aimed_arrival_time": "06:34",
+                                "expected_arrival_time": "07:34",
+                                "expected_departure_time": "07:34"
+                              }
+                            ]
+                          }
+                        }`;
 
         expect(TrainStatusParser().getTrainStatusFromResponse(trainJson)).toEqual("There are no trains currently running!");
     });

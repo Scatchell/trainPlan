@@ -1,6 +1,15 @@
 "use strict";
+const moment = require('moment')
 
 exports.TrainStatusParser = function () {
+    function between(departureTime, earlyTime, lateTime) {
+        let earlyTimeLimit = moment.utc(earlyTime, "HH:mm");
+        let lateTimeLimit = moment.utc(lateTime, "HH:mm");
+        let aimedDepartureTime = moment.utc(departureTime, "HH:mm");
+
+        return aimedDepartureTime.isAfter(earlyTimeLimit) && aimedDepartureTime.isBefore(lateTimeLimit);
+    }
+
     return {
         getTrainStatusFromResponse: function (responseBody) {
             // console.log('BODY: ' + responseBody);
@@ -9,7 +18,7 @@ exports.TrainStatusParser = function () {
             let allDepartures = transportApiJsonRes.departures.all;
 
             let filteredDepartures = allDepartures.filter(function (departure) {
-                return departure.aimed_departure_time === "07:34" || departure.aimed_departure_time === "08:07";
+                return between(departure.aimed_departure_time, "07:00", "09:00");
             });
 
             if (filteredDepartures.length === 0) {
