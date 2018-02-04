@@ -1,5 +1,4 @@
 "use strict";
-const AWS = require('aws-sdk');
 
 const STATION_INFO = {
     "Manchester Piccadilly": "MAN",
@@ -8,13 +7,13 @@ const STATION_INFO = {
     "South Parkway": "LPY"
 };
 
-exports.StationSource = function () {
+exports.StationData = function (dynamodb) {
+    const NO_OP = function () {
+    };
+
     function stationCodeFrom(stationName) {
         return STATION_INFO[stationName];
     }
-
-    AWS.config.update({region: 'eu-west-2'});
-    let dynamodb = new AWS.DynamoDB({apiVersion: '2012-10-08'});
 
     return {
         getStationCode: function () {
@@ -27,14 +26,7 @@ exports.StationSource = function () {
             };
 
             return new Promise(function (resolve, reject) {
-                dynamodb.getItem(params, function (err, data) {
-                    if (err) {
-                        console.log("Error", err);
-                    } else {
-                        console.log("Success", data.Item);
-                    }
-                }, function () {
-                }).on('success', function (response) {
+                dynamodb.getItem(params, NO_OP).on('success', function (response) {
                     let destStationCode = response.data.Item['DestinationStation']['S'];
                     resolve(destStationCode);
                 }).on('error', function (err) {
@@ -42,16 +34,25 @@ exports.StationSource = function () {
                 });
             });
         },
-        createAndSaveStationCode: function (stationName, success) {
-            const stationCode = stationCodeFrom(stationName);
+        createAndSaveStationCode: function (originStationName, destinationStationName, success) {
+            const originStationCode = stationCodeFrom(originStationName);
+            const destStationCode = stationCodeFrom(destinationStationName);
+
+            if (!originStationCode || !destStationCode) {
+                throw new Error("Station not found", "STATION_NOT_FOUND");
+            }
+
             const params = {
                 TableName: 'UserData',
                 Item: {
                     'UserId': {
                         S: '123'
                     },
+                    'OriginStation': {
+                        S: originStationCode
+                    },
                     'DestinationStation': {
-                        S: stationCode
+                        S: destStationCode
                     }
                 }
             };
@@ -59,8 +60,7 @@ exports.StationSource = function () {
             dynamodb.putItem(params, function (err, data) {
                 if (err) console.log(err, err.stack); // an error occurred
                 else {
-                    console.log(data);
-                    success(stationCode);
+                    success(originStationCode);
                 }
             });
 

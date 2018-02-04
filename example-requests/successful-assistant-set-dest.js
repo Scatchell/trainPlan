@@ -8,14 +8,15 @@ module.exports = {
 				"action": "",
 				"actionIncomplete": false,
 				"parameters": {
-                    "originTrainStation": "Manchester Piccadilly"
+                    "originTrainStation": "Manchester Piccadilly",
+                    "destinationTrainStation": "Liverpool South Parkway"
 				},
 				"contexts": [],
 				"metadata": {
 					"intentId": "1a6e401e-39fa-48ac-bcab-86c701695ae2",
 						"webhookUsed": "false",
 						"webhookForSlotFillingUsed": "false",
-						"intentName": "TrainSetSourceIntent"
+                    "intentName": "TrainSetUserRouteIntent"
 				},
 				"fulfillment": {
 					"speech": "",

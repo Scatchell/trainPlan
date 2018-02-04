@@ -1,7 +1,8 @@
 'use strict';
 const https = require('https');
 const TrainStatusParser = require('./src/TrainStatusParser').TrainStatusParser;
-const StationSource = require('./src/StationSource').StationSource;
+const StationData = require('./src/StationData').StationData;
+const AWS = require('aws-sdk');
 
 exports.handler = function (event, context, callback) {
 
@@ -14,16 +15,29 @@ exports.handler = function (event, context, callback) {
     try {
         let intentName = event.result.metadata.intentName;
 
-        console.log('intentName: ' + intentName);
+        AWS.config.update({region: 'eu-west-2'});
+        let dynamodb = new AWS.DynamoDB({apiVersion: '2012-10-08'});
+
+        let stationData = StationData(dynamodb);
         if (intentName === "TrainLateIntent") {
-            StationSource().getStationCode().then(
+            stationData.getStationCode().then(
                 function (stationCode) {
                     respondWithTrainStatus(stationCode);
                 }
             );
         } else if (intentName === "TrainSetUserRouteIntent") {
-            let stationName = event.result.parameters.originTrainStation;
-            StationSource().createAndSaveStationCode(stationName, success);
+            let originStationName = event.result.parameters.originTrainStation;
+            // let destinationStationName = event.result.parameters.destinationTrainStation;
+
+            try {
+                stationData.createAndSaveStationCode(originStationName, destinationStationName, success);
+            } catch (e) {
+                console.log(e);
+                if (e.id === "STATION_NOT_FOUND") {
+                    callback(null, {"speech": "Sorry, the station name was not found, please try again!"});
+                    console.log("station not found");
+                }
+            }
         } else {
             callback(null, {"speech": "Sorry, I don't understand that. Try again!"})
         }
@@ -45,12 +59,8 @@ exports.handler = function (event, context, callback) {
         };
 
         const req = https.get(options, function (res) {
-            console.log('STATUS: ' + res.statusCode);
-
-            // Buffer the body entirely for processing as a whole.
             let bodyChunks = [];
             res.on('data', function (chunk) {
-                // You can process streamed parts here...
                 bodyChunks.push(chunk);
             }).on('end', function () {
                 const body = Buffer.concat(bodyChunks);
@@ -59,7 +69,7 @@ exports.handler = function (event, context, callback) {
         });
 
         req.on('error', function (e) {
-            console.log('ERROR: ' + e.message);
+            console.log('ERROR IN API REQUEST: ' + e.message);
         });
     }
 };
