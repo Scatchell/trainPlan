@@ -15,7 +15,7 @@ exports.StationSource = function () {
     let dynamodb = new AWS.DynamoDB({apiVersion: '2012-10-08'});
 
     return {
-        getStationCode: function (success) {
+        getStationCode: function () {
             const params = {
                 TableName: 'UserData',
                 Key: {
@@ -24,18 +24,20 @@ exports.StationSource = function () {
                 ProjectionExpression: 'DestinationStation'
             };
 
-            dynamodb.getItem(params, function (err, data) {
-                if (err) {
-                    console.log("Error", err);
-                } else {
-                    console.log("Success", data.Item);
-                }
-            }, function () {
-            }).on('success', function (response) {
-                let destStationCode = response.data.Item['DestinationStation']['S'];
-                success(destStationCode);
-            }).on('error', function (err) {
-                throw err;
+            return new Promise(function (resolve, reject) {
+                dynamodb.getItem(params, function (err, data) {
+                    if (err) {
+                        console.log("Error", err);
+                    } else {
+                        console.log("Success", data.Item);
+                    }
+                }, function () {
+                }).on('success', function (response) {
+                    let destStationCode = response.data.Item['DestinationStation']['S'];
+                    resolve(destStationCode);
+                }).on('error', function (err) {
+                    reject(Error(err));
+                });
             });
         },
         createAndSaveStationCode: function (stationName, success) {

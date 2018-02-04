@@ -16,7 +16,11 @@ exports.handler = function (event, context, callback) {
 
         console.log('intentName: ' + intentName);
         if (intentName === "TrainLateIntent") {
-            StationSource().getStationCode(respondWithTrainStatus);
+            StationSource().getStationCode().then(
+                function (stationCode) {
+                    respondWithTrainStatus(stationCode);
+                }
+            );
         } else if (intentName === "TrainSetSourceIntent") {
             let stationName = event.result.parameters.trainStation;
             StationSource().createAndSaveStationCode(stationName, success);
