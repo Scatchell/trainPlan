@@ -11,14 +11,36 @@ exports.StationSource = function () {
         return STATION_INFO[stationName];
     }
 
+    AWS.config.update({region: 'eu-west-2'});
+    let dynamodb = new AWS.DynamoDB({apiVersion: '2012-10-08'});
+
     return {
-        createAndSaveToDynamo: function (stationName, success) {
-            AWS.config.update({region: 'eu-west-2'});
+        getStationCode: function (success) {
+            const params = {
+                TableName: 'UserData',
+                Key: {
+                    'UserId': {S: '123'},
+                },
+                ProjectionExpression: 'DestinationStation'
+            };
 
-            let dynamodb = new AWS.DynamoDB({apiVersion: '2012-10-08'});
-
-            let stationCode = stationCodeFrom(stationName);
-            var params = {
+            dynamodb.getItem(params, function (err, data) {
+                if (err) {
+                    console.log("Error", err);
+                } else {
+                    console.log("Success", data.Item);
+                }
+            }, function () {
+            }).on('success', function (response) {
+                let destStationCode = response.data.Item['DestinationStation']['S'];
+                success(destStationCode);
+            }).on('error', function (err) {
+                throw err;
+            });
+        },
+        createAndSaveStationCode: function (stationName, success) {
+            const stationCode = stationCodeFrom(stationName);
+            const params = {
                 TableName: 'UserData',
                 Item: {
                     'UserId': {
@@ -39,6 +61,6 @@ exports.StationSource = function () {
             });
 
         }
-        };
+    };
 }
-    ;
+;
