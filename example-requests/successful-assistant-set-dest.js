@@ -8,7 +8,7 @@ module.exports = {
 				"action": "",
 				"actionIncomplete": false,
 				"parameters": {
-					"trainStation": "Manchester Piccadilly"
+                    "originTrainStation": "Manchester Piccadilly"
 				},
 				"contexts": [],
 				"metadata": {

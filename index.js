@@ -21,8 +21,8 @@ exports.handler = function (event, context, callback) {
                     respondWithTrainStatus(stationCode);
                 }
             );
-        } else if (intentName === "TrainSetSourceIntent") {
-            let stationName = event.result.parameters.trainStation;
+        } else if (intentName === "TrainSetUserRouteIntent") {
+            let stationName = event.result.parameters.originTrainStation;
             StationSource().createAndSaveStationCode(stationName, success);
         } else {
             callback(null, {"speech": "Sorry, I don't understand that. Try again!"})

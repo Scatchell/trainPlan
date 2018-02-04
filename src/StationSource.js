@@ -3,7 +3,9 @@ const AWS = require('aws-sdk');
 
 const STATION_INFO = {
     "Manchester Piccadilly": "MAN",
-    "Piccadilly": "MAN"
+    "Piccadilly": "MAN",
+    "Liverpool South Parkway": "LPY",
+    "South Parkway": "LPY"
 };
 
 exports.StationSource = function () {
