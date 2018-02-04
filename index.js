@@ -1,8 +1,13 @@
 'use strict';
 const https = require('https');
 const TrainStatusParser = require('./src/TrainStatusParser').TrainStatusParser;
+const StationSource = require('./src/StationSource').StationSource;
 
 exports.handler = function (event, context, callback) {
+
+    function success(stationCode) {
+        callback(null, {"speech": "I've set the origin station to station code: " + stationCode})
+    }
 
     console.log("event result:");
     console.log(event);
@@ -12,10 +17,14 @@ exports.handler = function (event, context, callback) {
         console.log('intentName: ' + intentName);
         if (intentName === "TrainLateIntent") {
             respondWithTrainStatus();
+        } else if(intentName === "TrainSetSourceIntent") {
+            let stationName = event.result.parameters.trainStation;
+            StationSource().createAndSaveToDynamo(stationName, success);
         } else {
             callback(null, {"speech": "Sorry, I don't understand that. Try again!"})
         }
     } catch (e) {
+        console.log(e);
         if (e instanceof TypeError) {
             callback(null, {"speech": "Sorry, something went wrong with the request! Maybe it was formatted incorrectly."});
         }
