@@ -6,8 +6,8 @@ const AWS = require('aws-sdk');
 
 exports.handler = function (event, context, callback) {
 
-    function success(stationCode) {
-        callback(null, {"speech": "OK! I've set the origin station to station code: " + stationCode})
+    function success(originStationCode, destinationStationCode) {
+        callback(null, {"speech": "OK! I've set the origin to station code: " + originStationCode + ", and the destination to station code: " + destinationStationCode})
     }
 
     console.log("event result:");
@@ -20,14 +20,14 @@ exports.handler = function (event, context, callback) {
 
         let stationData = StationData(dynamodb);
         if (intentName === "TrainLateIntent") {
-            stationData.getStationCode().then(
-                function (stationCode) {
-                    respondWithTrainStatus(stationCode);
+            stationData.getStationCodes().then(
+                function (stationCodes) {
+                    respondWithTrainStatus(stationCodes.origin, stationCodes.destination);
                 }
             );
         } else if (intentName === "TrainSetUserRouteIntent") {
             let originStationName = event.result.parameters.originTrainStation;
-            // let destinationStationName = event.result.parameters.destinationTrainStation;
+            let destinationStationName = event.result.parameters.destinationTrainStation;
 
             try {
                 stationData.createAndSaveStationCode(originStationName, destinationStationName, success);
@@ -49,13 +49,13 @@ exports.handler = function (event, context, callback) {
         callback(null, {"speech": "Sorry, something went wrong!"})
     }
 
-    function respondWithTrainStatus(stationCode) {
+    function respondWithTrainStatus(stationCode, destStationCode) {
         const appId = process.env.APP_ID;
         const appKey = process.env.APP_KEY;
 
         const options = {
             host: 'transportapi.com',
-            path: "/v3/uk/train/station/" + stationCode + "/live.json?app_id=" + appId + "&app_key=" + appKey + "&calling_at=LPY&darwin=false&train_status=passenger"
+            path: "/v3/uk/train/station/" + stationCode + "/live.json?app_id=" + appId + "&app_key=" + appKey + "&calling_at=" + destStationCode + "&darwin=false&train_status=passenger"
         };
 
         const req = https.get(options, function (res) {

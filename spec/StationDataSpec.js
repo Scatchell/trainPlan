@@ -5,17 +5,10 @@ describe("TrainStatusParser", function () {
     const NO_OP = function () {
     };
 
+    let expectedParams;
 
     beforeEach(function () {
-    });
-
-    it("should map station names to station code in params", function () {
-
-        let dynamodbMock = jasmine.createSpyObj('dynamodbMock', ['putItem']);
-
-        StationData(dynamodbMock).createAndSaveStationCode("Manchester Piccadilly", "Liverpool South Parkway", NO_OP);
-
-        let expectedParams = {
+        expectedParams = {
             TableName: 'UserData',
             Item: {
                 'UserId': {
@@ -29,6 +22,12 @@ describe("TrainStatusParser", function () {
                 }
             }
         };
+    });
+
+    it("should map station names to station code in params", function () {
+        let dynamodbMock = jasmine.createSpyObj('dynamodbMock', ['putItem']);
+
+        StationData(dynamodbMock).createAndSaveStationCode("Manchester Piccadilly", "Liverpool South Parkway", NO_OP);
 
         expect(dynamodbMock.putItem).toHaveBeenCalledWith(expectedParams, jasmine.any(Function))
     });
