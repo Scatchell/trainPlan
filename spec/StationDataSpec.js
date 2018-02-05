@@ -6,50 +6,55 @@ describe("TrainStatusParser", function () {
     };
 
     let expectedParams;
+    let dynamodbMock;
 
     beforeEach(function () {
         expectedParams = {
-            TableName: 'UserData',
-            Item: {
-                'UserId': {
-                    S: '123'
-                },
-                'OriginStation': {
-                    S: "MAN"
-                },
-                'DestinationStation': {
-                    S: "LPY"
-                }
-            }
+            TableName: 'userData',
+            Key: {
+                'userId': '123'
+            },
+            UpdateExpression: "set originStation = :originStation, destinationStation = :destinationStation",
+            ExpressionAttributeValues: {
+                ":originStation": 'MAN',
+                ":destinationStation": 'LPY'
+            },
+            ReturnValues: "UPDATED_NEW",
         };
+
+        dynamodbMock = jasmine.createSpyObj('dynamodbMock', ['update', 'getItem']);
     });
 
     it("should map station names to station code in params", function () {
-        let dynamodbMock = jasmine.createSpyObj('dynamodbMock', ['putItem']);
+        StationData(dynamodbMock).createAndSaveStationInformation("Manchester Piccadilly", "Liverpool South Parkway", NO_OP);
 
-        StationData(dynamodbMock).createAndSaveStationCode("Manchester Piccadilly", "Liverpool South Parkway", NO_OP);
-
-        expect(dynamodbMock.putItem).toHaveBeenCalledWith(expectedParams, jasmine.any(Function))
+        expect(dynamodbMock.update).toHaveBeenCalledWith(expectedParams, jasmine.any(Function))
     });
 
     it("should not try to save if destination station code cannot be found", function () {
-        let dynamodbMock = jasmine.createSpyObj('dynamodbMock', ['putItem']);
-
         expect(function () {
-            StationData(dynamodbMock).createAndSaveStationCode("Manchester Piccadilly", "unknown", NO_OP);
+            StationData(dynamodbMock).createAndSaveStationInformation("Manchester Piccadilly", "unknown", NO_OP);
         }).toThrowError("Station not found");
 
-        expect(dynamodbMock.putItem).not.toHaveBeenCalled();
+        expect(dynamodbMock.update).not.toHaveBeenCalled();
     });
 
     it("should not try to save if origin station code cannot be found", function () {
-        let dynamodbMock = jasmine.createSpyObj('dynamodbMock', ['putItem']);
-
         expect(function () {
-            StationData(dynamodbMock).createAndSaveStationCode("unknown", "Liverpool South Parkway", NO_OP);
+            StationData(dynamodbMock).createAndSaveStationInformation("unknown", "Liverpool South Parkway", NO_OP);
         }).toThrowError("Station not found");
 
-        expect(dynamodbMock.putItem).not.toHaveBeenCalled();
+        expect(dynamodbMock.update).not.toHaveBeenCalled();
     });
+
+    //todo figure out a way to test this (extract implementation function into helper?)
+    // fit("should get station details", function (done) {
+    //     StationData(dynamodbMock).getStationDetails().then(
+    //         function (stationDetails) {
+    //             expect(stationDetails).toEqual({});
+    //             done();
+    //         }
+    //     );
+    // })
 
 });

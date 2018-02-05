@@ -5,8 +5,8 @@ const STATION_INFO = {
     "Piccadilly": "MAN",
     "Liverpool South Parkway": "LPY",
     "South Parkway": "LPY",
-
     "Wilmslow": "WML",
+
     "Altrincham": "ALT",
     "Ardwick": "ADK",
     "Ashburys": "ABY",
@@ -99,7 +99,7 @@ const STATION_INFO = {
     "Woodsmoor": "WSR",
 };
 
-exports.StationData = function (dynamodb) {
+exports.StationData = function (dynamodbDocClient) {
     const NO_OP = function () {
     };
 
@@ -108,26 +108,34 @@ exports.StationData = function (dynamodb) {
     }
 
     return {
-        getStationCodes: function () {
+        getStationDetails: function () {
             const params = {
-                TableName: 'UserData',
+                TableName: 'userData',
                 Key: {
-                    'UserId': {S: '123'},
+                    'userId': '123',
                 },
-                ProjectionExpression: 'OriginStation, DestinationStation'
+                AttributesToGet: ['originStation', 'destinationStation', 'earlyTime', 'lateTime']
             };
 
             return new Promise(function (resolve, reject) {
-                dynamodb.getItem(params, NO_OP).on('success', function (response) {
-                    let originStationCode = response.data.Item['OriginStation']['S'];
-                    let destStationCode = response.data.Item['DestinationStation']['S'];
-                    resolve({origin: originStationCode, destination: destStationCode});
+                dynamodbDocClient.get(params, NO_OP).on('success', function (response) {
+                    let originStationCode = response.data.Item['originStation'];
+                    let destStationCode = response.data.Item['destinationStation'];
+                    let earlyTime = response.data.Item['earlyTime'];
+                    let lateTime = response.data.Item['lateTime'];
+
+                    resolve({
+                        origin: originStationCode,
+                        destination: destStationCode,
+                        earlyTime: earlyTime,
+                        lateTime: lateTime
+                    });
                 }).on('error', function (err) {
                     reject(Error(err));
                 });
             });
         },
-        createAndSaveStationCode: function (originStationName, destStationName, success) {
+        createAndSaveStationInformation: function (originStationName, destStationName, success) {
             const originStationCode = stationCodeFrom(originStationName);
             const destStationCode = stationCodeFrom(destStationName);
 
@@ -136,27 +144,50 @@ exports.StationData = function (dynamodb) {
             }
 
             const params = {
-                TableName: 'UserData',
-                Item: {
-                    'UserId': {
-                        S: '123'
-                    },
-                    'OriginStation': {
-                        S: originStationCode
-                    },
-                    'DestinationStation': {
-                        S: destStationCode
-                    }
-                }
+                TableName: 'userData',
+                Key: {
+                    'userId': '123'
+                },
+                UpdateExpression: "set originStation = :originStation, destinationStation = :destinationStation",
+                ExpressionAttributeValues: {
+                    ":originStation": originStationCode,
+                    ":destinationStation": destStationCode
+                },
+                ReturnValues: "UPDATED_NEW",
             };
 
-            dynamodb.putItem(params, function (err, data) {
-                if (err) console.log(err, err.stack); // an error occurred
+            dynamodbDocClient.update(params, function (err, data) {
+                if (err) {
+                    console.error("Unable to update item. Error JSON:", JSON.stringify(err, null, 2));
+                }
                 else {
                     success(originStationCode, destStationCode);
                 }
             });
 
+        },
+        createAndSaveTimeInformation: function (earlyTime, lateTime, success) {
+            const params = {
+                TableName: 'userData',
+                Key: {
+                    'userId': '123'
+                },
+                UpdateExpression: "set earlyTime = :earlyTime, lateTime = :lateTime",
+                ExpressionAttributeValues: {
+                    ":earlyTime": earlyTime,
+                    ":lateTime": lateTime
+                },
+                ReturnValues: "UPDATED_NEW",
+            };
+
+            console.log("Updating the time...");
+            dynamodbDocClient.update(params, function (err, data) {
+                if (err) {
+                    console.error("Unable to update item. Error JSON:", JSON.stringify(err, null, 2));
+                } else {
+                    success(earlyTime, lateTime);
+                }
+            });
         }
     };
 }

@@ -6,8 +6,12 @@ const AWS = require('aws-sdk');
 
 exports.handler = function (event, context, callback) {
 
-    function success(originStationCode, destinationStationCode) {
+    function stationUpdateSuccess(originStationCode, destinationStationCode) {
         callback(null, {"speech": "OK! I've set the origin to station code: " + originStationCode + ", and the destination to station code: " + destinationStationCode})
+    }
+
+    function timeUpdateSuccess(earlyTime, lateTime) {
+        callback(null, {"speech": "OK! I've set the time range to between " + earlyTime + " and " + lateTime})
     }
 
     console.log("event result:");
@@ -16,26 +20,43 @@ exports.handler = function (event, context, callback) {
         let intentName = event.result.metadata.intentName;
 
         AWS.config.update({region: 'eu-west-2'});
-        let dynamodb = new AWS.DynamoDB({apiVersion: '2012-10-08'});
+        let dynamodb = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-10-08'});
 
         let stationData = StationData(dynamodb);
         if (intentName === "TrainLateIntent") {
-            stationData.getStationCodes().then(
-                function (stationCodes) {
-                    respondWithTrainStatus(stationCodes.origin, stationCodes.destination);
+            stationData.getStationDetails().then(
+                function (stationDetails) {
+                    respondWithTrainStatus({
+                        origin: stationDetails.origin,
+                        destination: stationDetails.destination,
+                        earlyTime: stationDetails.earlyTime,
+                        lateTime: stationDetails.lateTime
+                    });
                 }
-            );
+            ).catch(function (err) {
+                console.error("Unable to retrieve user details. Error JSON:", JSON.stringify(err, null, 2));
+                callback(null, {"speech": "Sorry, something went wrong when retrieving your details. Try again!"})
+            });
+        } else if (intentName === "TrainSetUserTimeIntent") {
+            let earlyTime = event.result.parameters.earlyTime;
+            let lateTime = event.result.parameters.lateTime;
+
+            try {
+                stationData.createAndSaveTimeInformation(earlyTime, lateTime, timeUpdateSuccess);
+            } catch (e) {
+                console.log(e);
+                //TODO must create time errors if any
+            }
         } else if (intentName === "TrainSetUserRouteIntent") {
             let originStationName = event.result.parameters.originTrainStation;
             let destinationStationName = event.result.parameters.destinationTrainStation;
 
             try {
-                stationData.createAndSaveStationCode(originStationName, destinationStationName, success);
+                stationData.createAndSaveStationInformation(originStationName, destinationStationName, stationUpdateSuccess);
             } catch (e) {
-                console.log(e);
                 if (e.id === "STATION_NOT_FOUND") {
                     callback(null, {"speech": "Sorry, the station name was not found, please try again!"});
-                    console.log("station not found");
+                    console.error("Station name cannot be found. Error JSON:", JSON.stringify(e, null, 2));
                 }
             }
         } else {
@@ -49,13 +70,13 @@ exports.handler = function (event, context, callback) {
         callback(null, {"speech": "Sorry, something went wrong!"})
     }
 
-    function respondWithTrainStatus(stationCode, destStationCode) {
+    function respondWithTrainStatus(trainDetails) {
         const appId = process.env.APP_ID;
         const appKey = process.env.APP_KEY;
 
         const options = {
             host: 'transportapi.com',
-            path: "/v3/uk/train/station/" + stationCode + "/live.json?app_id=" + appId + "&app_key=" + appKey + "&calling_at=" + destStationCode + "&darwin=false&train_status=passenger"
+            path: "/v3/uk/train/station/" + trainDetails.origin + "/live.json?app_id=" + appId + "&app_key=" + appKey + "&calling_at=" + trainDetails.destination + "&darwin=false&train_status=passenger"
         };
 
         const req = https.get(options, function (res) {
@@ -64,12 +85,17 @@ exports.handler = function (event, context, callback) {
                 bodyChunks.push(chunk);
             }).on('end', function () {
                 const body = Buffer.concat(bodyChunks);
-                callback(null, {"speech": TrainStatusParser().getTrainStatusFromResponse(body)});
+                callback(null, {
+                    "speech": TrainStatusParser().getTrainStatusFromResponse(body, {
+                        earlyTime: trainDetails.earlyTime,
+                        lateTime: trainDetails.lateTime
+                    })
+                });
             })
         });
 
         req.on('error', function (e) {
-            console.log('ERROR IN API REQUEST: ' + e.message);
+            console.error("Error in API request. Error JSON: ", JSON.stringify(e, null, 2));
         });
     }
 };

@@ -11,18 +11,20 @@ exports.TrainStatusParser = function () {
     }
 
     return {
-        getTrainStatusFromResponse: function (responseBody) {
+        getTrainStatusFromResponse: function (responseBody, filterDetails) {
             console.log('BODY: ' + responseBody);
             let transportApiJsonRes = JSON.parse(responseBody);
 
             let allDepartures = transportApiJsonRes.departures.all;
 
+            let earlyTime = filterDetails.earlyTime;
+            let lateTime = filterDetails.lateTime;
             let filteredDepartures = allDepartures.filter(function (departure) {
-                return between(departure.aimed_departure_time, "07:00", "09:00");
+                return between(departure.aimed_departure_time, earlyTime, lateTime);
             });
 
             if (filteredDepartures.length === 0) {
-                return "There are no trains currently running!";
+                return "There are no trains currently running between " + earlyTime + " and " + lateTime;
             }
 
             let response = "";

@@ -1,6 +1,8 @@
 "use strict";
+const TrainStatusParser = require('../src/TrainStatusParser').TrainStatusParser;
+
 describe("TrainStatusParser", function () {
-    var TrainStatusParser = require('../src/TrainStatusParser').TrainStatusParser;
+    let filterDetails = {earlyTime: '07:00', lateTime: '09:00'};
 
     beforeEach(function () {
     });
@@ -21,7 +23,28 @@ describe("TrainStatusParser", function () {
                           }
                         }`;
 
-        expect(TrainStatusParser().getTrainStatusFromResponse(trainJson)).toEqual("The train meant for: 07:34 is on time!");
+        expect(TrainStatusParser().getTrainStatusFromResponse(trainJson, filterDetails)).toEqual("The train meant for: 07:34 is on time!");
+    });
+
+    it("should respect the early and late time filters", function () {
+        let filterDetails = {earlyTime: '09:00', lateTime: '10:00'};
+
+        let trainJson = `{
+                          "station_name": "Manchester Piccadilly",
+                          "station_code": "MAN",
+                          "departures": {
+                            "all": [
+                              {
+                                "aimed_departure_time": "09:34",
+                                "aimed_arrival_time": "23:05",
+                                "expected_arrival_time": "23:06",
+                                "expected_departure_time": "09:34"
+                              }
+                            ]
+                          }
+                        }`;
+
+        expect(TrainStatusParser().getTrainStatusFromResponse(trainJson, filterDetails)).toEqual("The train meant for: 09:34 is on time!");
     });
 
     it("should be able to alert when the train IS late", function () {
@@ -40,22 +63,23 @@ describe("TrainStatusParser", function () {
                           }
                         }`;
 
-        expect(TrainStatusParser().getTrainStatusFromResponse(trainJson)).toEqual("The train meant for: 07:34 is actually arriving at 07:36");
+        expect(TrainStatusParser().getTrainStatusFromResponse(trainJson, filterDetails)).toEqual("The train meant for: 07:34 is actually arriving at 07:36");
     });
 
     it("should alert the user when no trains exist", function () {
-        let trainJson = `{"date":"2018-01-29","time_of_day":"22:26","request_time":"2018-01-29T22:26:29+00:00","station_name":"Manchester Piccadilly","station_code":"MAN","departures":{"all":[]}}`;
+        let trainJson = `{
+                            "date": "2018-01-29",
+                            "time_of_day": "22:26",
+                            "request_time": "2018-01-29T22:26:29+00:00",
+                            "station_name": "Manchester Piccadilly",
+                            "station_code": "MAN",
+                            "departures": {"all": []}
+                        }`;
 
-        expect(TrainStatusParser().getTrainStatusFromResponse(trainJson)).toEqual("There are no trains currently running!");
+        expect(TrainStatusParser().getTrainStatusFromResponse(trainJson, filterDetails)).toContain("There are no trains currently running");
     });
 
-    it("should alert the user when no trains exist", function () {
-        let trainJson = `{"date":"2018-01-29","time_of_day":"22:26","request_time":"2018-01-29T22:26:29+00:00","station_name":"Manchester Piccadilly","station_code":"MAN","departures":{"all":[]}}`;
-
-        expect(TrainStatusParser().getTrainStatusFromResponse(trainJson)).toEqual("There are no trains currently running!");
-    });
-
-    it("should ignore trains not meant to leave at 7:34 or 8:07", function () {
+    it("should ignore trains not aimed to leave within the set filterDetails time", function () {
         let trainJson = `{
                           "station_name": "Manchester Piccadilly",
                           "station_code": "MAN",
@@ -71,7 +95,7 @@ describe("TrainStatusParser", function () {
                           }
                         }`;
 
-        expect(TrainStatusParser().getTrainStatusFromResponse(trainJson)).toEqual("There are no trains currently running!");
+        expect(TrainStatusParser().getTrainStatusFromResponse(trainJson, filterDetails)).toEqual("There are no trains currently running between 07:00 and 09:00");
     });
 
     it("should tell the user about both trains if two are valid", function () {
@@ -96,7 +120,7 @@ describe("TrainStatusParser", function () {
                           }
                         }`;
 
-        expect(TrainStatusParser().getTrainStatusFromResponse(trainJson)).toEqual("The train meant for: 07:34 is actually arriving at 07:36, and the train meant for: 08:07 is on time!");
+        expect(TrainStatusParser().getTrainStatusFromResponse(trainJson, filterDetails)).toEqual("The train meant for: 07:34 is actually arriving at 07:36, and the train meant for: 08:07 is on time!");
     });
 
 });
