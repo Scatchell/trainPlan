@@ -2,7 +2,7 @@
 const TrainStatusParser = require('../src/TrainStatusParser').TrainStatusParser;
 
 describe("TrainStatusParser", function () {
-    let filterDetails = {earlyTime: '07:00', lateTime: '09:00'};
+    let filterDetails = {earlyTime: '07:00:00', lateTime: '09:00:00'};
 
     beforeEach(function () {
     });
@@ -79,7 +79,7 @@ describe("TrainStatusParser", function () {
         expect(TrainStatusParser().getTrainStatusFromResponse(trainJson, filterDetails)).toContain("There are no trains currently running");
     });
 
-    it("should ignore trains not aimed to leave within the set filterDetails time", function () {
+    describe("filtering time", function () {
         let trainJson = `{
                           "station_name": "Manchester Piccadilly",
                           "station_code": "MAN",
@@ -95,7 +95,15 @@ describe("TrainStatusParser", function () {
                           }
                         }`;
 
-        expect(TrainStatusParser().getTrainStatusFromResponse(trainJson, filterDetails)).toEqual("There are no trains currently running between 07:00 and 09:00");
+        it("should ignore trains not aimed to leave within the set filterDetails time", function () {
+            expect(TrainStatusParser().getTrainStatusFromResponse(trainJson, filterDetails)).toEqual("There are no trains currently running between 7 and 9");
+        });
+
+        it("should format correctly for minutes", function () {
+            let filterDetails = {earlyTime: '07:35:00', lateTime: '09:30:00'};
+
+            expect(TrainStatusParser().getTrainStatusFromResponse(trainJson, filterDetails)).toEqual("There are no trains currently running between 7:35 and 9:30");
+        });
     });
 
     it("should tell the user about both trains if two are valid", function () {

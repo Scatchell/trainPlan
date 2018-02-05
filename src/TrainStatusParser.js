@@ -10,6 +10,18 @@ exports.TrainStatusParser = function () {
         return aimedDepartureTime.isAfter(earlyTimeLimit) && aimedDepartureTime.isBefore(lateTimeLimit);
     }
 
+    function formatTime(earlyTimeString) {
+
+        let earlyTime = moment.utc(earlyTimeString, "HH:mm:ss");
+        let formatString = 'H';
+
+        if (earlyTime.minutes() !== 0) {
+            formatString = 'H:mm'
+        }
+
+        return earlyTime.format(formatString);
+    }
+
     return {
         getTrainStatusFromResponse: function (responseBody, filterDetails) {
             console.log('BODY: ' + responseBody);
@@ -23,8 +35,9 @@ exports.TrainStatusParser = function () {
                 return between(departure.aimed_departure_time, earlyTime, lateTime);
             });
 
+
             if (filteredDepartures.length === 0) {
-                return "There are no trains currently running between " + earlyTime + " and " + lateTime;
+                return "There are no trains currently running between " + formatTime(earlyTime) + " and " + formatTime(lateTime);
             }
 
             let response = "";
