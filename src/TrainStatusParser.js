@@ -24,7 +24,6 @@ exports.TrainStatusParser = function () {
 
     return {
         getTrainStatusFromResponse: function (responseBody, filterDetails) {
-            console.log('BODY: ' + responseBody);
             let transportApiJsonRes = JSON.parse(responseBody);
 
             let allDepartures = transportApiJsonRes.departures.all;
