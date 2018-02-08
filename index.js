@@ -4,6 +4,7 @@ const TrainStatusParser = require('./src/TrainStatusParser').TrainStatusParser;
 const StationData = require('./src/StationData').StationData;
 const AWS = require('aws-sdk');
 
+
 exports.handler = function (event, context, callback) {
 
     function stationUpdateSuccess(originStationCode, destinationStationCode) {
@@ -16,59 +17,6 @@ exports.handler = function (event, context, callback) {
 
     console.log("event result:");
     console.log(event);
-    try {
-        let intentName = event.result.metadata.intentName;
-
-        AWS.config.update({region: 'eu-west-2'});
-        let dynamodb = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-10-08'});
-
-        let stationData = StationData(dynamodb);
-        if (intentName === "TrainLateIntent") {
-            stationData.getStationDetails().then(
-                function (stationDetails) {
-                    respondWithTrainStatus({
-                        origin: stationDetails.origin,
-                        destination: stationDetails.destination,
-                        earlyTime: stationDetails.earlyTime,
-                        lateTime: stationDetails.lateTime
-                    });
-                }
-            ).catch(function (err) {
-                console.error("Unable to retrieve user details. Error JSON:", JSON.stringify(err, null, 2));
-                callback(null, {"speech": "Sorry, something went wrong when retrieving your details. Try again!"})
-            });
-        } else if (intentName === "TrainSetUserTimeIntent") {
-            let earlyTime = event.result.parameters.earlyTime;
-            let lateTime = event.result.parameters.lateTime;
-
-            try {
-                stationData.createAndSaveTimeInformation(earlyTime, lateTime, timeUpdateSuccess);
-            } catch (e) {
-                console.log(e);
-                //TODO must create time errors if any
-            }
-        } else if (intentName === "TrainSetUserRouteIntent") {
-            let originStationName = event.result.parameters.originTrainStation;
-            let destinationStationName = event.result.parameters.destinationTrainStation;
-
-            try {
-                stationData.createAndSaveStationInformation(originStationName, destinationStationName, stationUpdateSuccess);
-            } catch (e) {
-                if (e.id === "STATION_NOT_FOUND") {
-                    callback(null, {"speech": "Sorry, the station name was not found, please try again!"});
-                    console.error("Station name cannot be found. Error JSON:", JSON.stringify(e, null, 2));
-                }
-            }
-        } else {
-            callback(null, {"speech": "Sorry, I don't understand that. Try again!"})
-        }
-    } catch (e) {
-        console.log(e);
-        if (e instanceof TypeError) {
-            callback(null, {"speech": "Sorry, something went wrong with the request! Maybe it was formatted incorrectly."});
-        }
-        callback(null, {"speech": "Sorry, something went wrong!"})
-    }
 
     function respondWithTrainStatus(trainDetails) {
         const appId = process.env.APP_ID;
@@ -97,5 +45,62 @@ exports.handler = function (event, context, callback) {
         req.on('error', function (e) {
             console.error("Error in API request. Error JSON: ", JSON.stringify(e, null, 2));
         });
+    }
+
+    function trainLateIntentAction(stationData) {
+        stationData.getStationDetails().then(
+            function (stationDetails) {
+                respondWithTrainStatus({
+                    origin: stationDetails.origin,
+                    destination: stationDetails.destination,
+                    earlyTime: stationDetails.earlyTime,
+                    lateTime: stationDetails.lateTime
+                });
+            }
+        ).catch(function (err) {
+            throw new Error("Unable to retrieve user details.", "RETRIEVE_USER_DETAILS_ERROR")
+        });
+    }
+
+    function trainSetUserTimeAction(stationData, event) {
+        let earlyTime = event.result.parameters.earlyTime;
+        let lateTime = event.result.parameters.lateTime;
+
+        try {
+            stationData.createAndSaveTimeInformation(earlyTime, lateTime, timeUpdateSuccess);
+        } catch (e) {
+            throw new Error("Unable to set time.", "SET_USER_TIME_ERROR")
+        }
+    }
+
+    function trainSetUserRouteIntent(stationData, event) {
+        let originStationName = event.result.parameters.originTrainStation;
+        let destinationStationName = event.result.parameters.destinationTrainStation;
+
+        try {
+            stationData.createAndSaveStationInformation(originStationName, destinationStationName, stationUpdateSuccess);
+        } catch (e) {
+            throw e;
+        }
+    }
+
+    let intentName = event.result.metadata.intentName;
+
+    AWS.config.update({region: 'eu-west-2'});
+    let dynamodb = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-10-08'});
+
+    let stationData = StationData(dynamodb);
+
+    const intentActions = {
+        "TrainLateIntent": trainLateIntentAction,
+        "TrainSetUserTimeIntent": trainSetUserTimeAction,
+        "TrainSetUserRouteIntent": trainSetUserRouteIntent
+    };
+
+    try {
+        intentActions[intentName](stationData, event);
+    } catch (err) {
+        console.error("Error: ", JSON.stringify(err, null, 2));
+        callback(null, {"speech": "Sorry, something went wrong. Try again!"})
     }
 };
