@@ -12,7 +12,7 @@
     "lint": "semistandard --fix \"**/*.js\"",
     "manTest": "./node_modules/lambda-local/bin/lambda-local -l index.js -h handler -e example-requests/successful-assistant-request.js -v 3",
     "test": "/Users/ascatche/sideProjects/googleHome/trainDayPlanner/node_modules/jasmine/bin/jasmine.js",
-    "awsShip": "zip -r trainDayPlanner.zip ./* && aws lambda update-function-code --function-name trainDayPlanner --zip-file fileb://./trainDayPlanner.zip --profile prod.train-planner --region eu-west-2 && rm trainDayPlanner.zip"
+    "awsShip": "zip -r trainDayPlanner.zip ./* -x *.git* && aws lambda update-function-code --function-name trainDayPlanner --zip-file fileb://./trainDayPlanner.zip --profile prod.train-planner --region eu-west-2"
   },
   "dependencies": {
     "aws-sdk": "^2.188.0",
