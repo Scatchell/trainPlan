@@ -16,7 +16,7 @@
     "zip": "zip -r trainDayPlanner.zip ./* -x 'es6src/**/*' -x es6src/*",
     "removeCompiledSource": "rm -rf ./index.js src",
     "localLambda": "npm run babel && lambda-local --profile-path ~/.aws/credentials --profile prod.train-planner -l index.js -h handler -e example-requests/successful-assistant-request.js -v 3 && npm run removeCompiledSource",
-    "awsShip": "npm run zip && aws lambda update-function-code --function-name trainDayPlanner --zip-file fileb://./trainDayPlanner.zip --profile prod.train-planner --region eu-west-2"
+    "awsShip": "npm run babel && npm run zip && aws lambda update-function-code --function-name trainDayPlanner --zip-file fileb://./trainDayPlanner.zip --profile prod.train-planner --region eu-west-2"
   },
   "dependencies": {
     "aws-sdk": "^2.188.0",
