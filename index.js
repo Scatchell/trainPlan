@@ -1,18 +1,43 @@
 'use strict';
+
+function _asyncToGenerator(fn) { return function () { var gen = fn.apply(this, arguments); return new Promise(function (resolve, reject) { function step(key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { return Promise.resolve(value).then(function (value) { step("next", value); }, function (err) { step("throw", err); }); } } return step("next"); }); }; }
+
 const https = require('https');
 const TrainStatusParser = require('./src/TrainStatusParser').TrainStatusParser;
 const StationData = require('./src/StationData').StationData;
 const AWS = require('aws-sdk');
 
-
 exports.handler = function (event, context, callback) {
+    let trainLateIntentAction = (() => {
+        var _ref = _asyncToGenerator(function* (stationData) {
+            let stationDetails;
+
+            try {
+                stationDetails = yield stationData.getStationDetails();
+            } catch (err) {
+                throw new Error("Unable to retrieve user details.", "RETRIEVE_USER_DETAILS_ERROR");
+            }
+            respondWithTrainStatus({
+                origin: stationDetails.origin,
+                destination: stationDetails.destination,
+                earlyTime: stationDetails.earlyTime,
+                lateTime: stationDetails.lateTime
+            });
+            // ).catch(function (err) {
+            // });
+        });
+
+        return function trainLateIntentAction(_x) {
+            return _ref.apply(this, arguments);
+        };
+    })();
 
     function stationUpdateSuccess(originStationCode, destinationStationCode) {
-        callback(null, {"speech": "OK! I've set the origin to station code: " + originStationCode + ", and the destination to station code: " + destinationStationCode})
+        callback(null, { "speech": "OK! I've set the origin to station code: " + originStationCode + ", and the destination to station code: " + destinationStationCode });
     }
 
     function timeUpdateSuccess(earlyTime, lateTime) {
-        callback(null, {"speech": "OK! I've set the time range to between " + earlyTime + " and " + lateTime})
+        callback(null, { "speech": "OK! I've set the time range to between " + earlyTime + " and " + lateTime });
     }
 
     console.log("event result:");
@@ -39,30 +64,12 @@ exports.handler = function (event, context, callback) {
                         lateTime: trainDetails.lateTime
                     })
                 });
-            })
+            });
         });
 
         req.on('error', function (e) {
             console.error("Error in API request. Error JSON: ", JSON.stringify(e, null, 2));
         });
-    }
-
-    async function trainLateIntentAction(stationData) {
-        let stationDetails;
-
-        try {
-            stationDetails = await stationData.getStationDetails();
-        } catch (err) {
-            throw new Error("Unable to retrieve user details.", "RETRIEVE_USER_DETAILS_ERROR")
-        }
-        respondWithTrainStatus({
-            origin: stationDetails.origin,
-            destination: stationDetails.destination,
-            earlyTime: stationDetails.earlyTime,
-            lateTime: stationDetails.lateTime
-        });
-        // ).catch(function (err) {
-        // });
     }
 
     function trainSetUserTimeAction(stationData, event) {
@@ -72,7 +79,7 @@ exports.handler = function (event, context, callback) {
         try {
             stationData.createAndSaveTimeInformation(earlyTime, lateTime, timeUpdateSuccess);
         } catch (e) {
-            throw new Error("Unable to set time.", "SET_USER_TIME_ERROR")
+            throw new Error("Unable to set time.", "SET_USER_TIME_ERROR");
         }
     }
 
@@ -89,8 +96,8 @@ exports.handler = function (event, context, callback) {
 
     let intentName = event.result.metadata.intentName;
 
-    AWS.config.update({region: 'eu-west-2'});
-    let dynamodb = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-10-08'});
+    AWS.config.update({ region: 'eu-west-2' });
+    let dynamodb = new AWS.DynamoDB.DocumentClient({ apiVersion: '2012-10-08' });
 
     let stationData = StationData(dynamodb);
 
@@ -104,6 +111,6 @@ exports.handler = function (event, context, callback) {
         intentActions[intentName](stationData, event);
     } catch (err) {
         console.error("Error: ", JSON.stringify(err, null, 2));
-        callback(null, {"speech": "Sorry, something went wrong. Try again!"})
+        callback(null, { "speech": "Sorry, something went wrong. Try again!" });
     }
 };

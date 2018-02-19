@@ -12,10 +12,10 @@
     "lint": "semistandard --fix \"**/*.js\"",
     "manTest": "./node_modules/lambda-local/bin/lambda-local -l index.js -h handler -e example-requests/successful-assistant-request.js -v 3",
     "test": "/Users/ascatche/sideProjects/googleHome/trainDayPlanner/node_modules/jasmine/bin/jasmine.js",
-    "babel": "babel --presets es2015 ./es6src -d ./",
+    "babel": "babel ./es6src -d ./",
     "zip": "zip -r trainDayPlanner.zip ./* -x 'es6src/**/*' -x es6src/*",
     "removeCompiledSource": "rm -rf ./index.js src",
-    "localLambda":"npm run babel && lambda-local --profile-path ~/.aws/credentials --profile prod.train-planner -l index.js -h handler -e example-requests/successful-assistant-request.js -v 3 && npm run removeCompiledSource",
+    "localLambda": "npm run babel && lambda-local --profile-path ~/.aws/credentials --profile prod.train-planner -l index.js -h handler -e example-requests/successful-assistant-request.js -v 3 && npm run removeCompiledSource",
     "awsShip": "npm run zip && aws lambda update-function-code --function-name trainDayPlanner --zip-file fileb://./trainDayPlanner.zip --profile prod.train-planner --region eu-west-2"
   },
   "dependencies": {
@@ -25,7 +25,7 @@
   "devDependencies": {
     "babel-cli": "^6.26.0",
     "babel-core": "^6.26.0",
-    "babel-preset-es2015": "^6.24.1",
+    "babel-preset-es2017": "^6.24.1",
     "jasmine": "^2.9.0",
     "lambda-local": "^1.4.5"
   }
