@@ -13,7 +13,8 @@
     "manTest": "./node_modules/lambda-local/bin/lambda-local -l index.js -h handler -e example-requests/successful-assistant-request.js -v 3",
     "test": "/Users/ascatche/sideProjects/googleHome/trainDayPlanner/node_modules/jasmine/bin/jasmine.js",
     "babel": "babel --presets es2015 ./es6src -d ./",
-    "awsShip": "zip -r trainDayPlanner.zip ./* -x *.git* && aws lambda update-function-code --function-name trainDayPlanner --zip-file fileb://./trainDayPlanner.zip --profile prod.train-planner --region eu-west-2"
+    "zip": "zip -r trainDayPlanner.zip ./* -x 'es6src/**/*' -x es6src/*",
+    "awsShip": "npm run zip && aws lambda update-function-code --function-name trainDayPlanner --zip-file fileb://./trainDayPlanner.zip --profile prod.train-planner --region eu-west-2"
   },
   "dependencies": {
     "aws-sdk": "^2.188.0",
