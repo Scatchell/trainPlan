@@ -2,5 +2,5 @@ node_modules/
 .idea/
 npm-debug.log
 trainDayPlanner.zip
-index.js
+./index.js
 src/
