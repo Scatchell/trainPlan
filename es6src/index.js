@@ -6,6 +6,8 @@ const AWS = require('aws-sdk');
 
 
 exports.handler = function (event, context, callback) {
+    console.log("event result:");
+    console.log(event);
 
     function stationUpdateSuccess(originStationCode, destinationStationCode) {
         callback(null, {"speech": "OK! I've set the origin to station code: " + originStationCode + ", and the destination to station code: " + destinationStationCode})
@@ -15,8 +17,10 @@ exports.handler = function (event, context, callback) {
         callback(null, {"speech": "OK! I've set the time range to between " + earlyTime + " and " + lateTime})
     }
 
-    console.log("event result:");
-    console.log(event);
+    function errorResponse(err) {
+        console.error("Error: ", JSON.stringify(err, null, 2));
+        callback(null, {"speech": "Sorry, something went wrong. Try again!"})
+    }
 
     async function trainLateIntentAction(stationData) {
         let stationDetails;
@@ -42,7 +46,10 @@ exports.handler = function (event, context, callback) {
             destination: stationDetails.destination,
             earlyTime: stationDetails.earlyTime,
             lateTime: stationDetails.lateTime
-        }, https, success);
+        }, https, success)
+            .on('error', function (e) {
+                errorResponse(e);
+            });
     }
 
     function trainSetUserTimeAction(stationData, event) {
@@ -68,8 +75,8 @@ exports.handler = function (event, context, callback) {
     }
 
     let intentName = event.result.metadata.intentName;
-
     AWS.config.update({region: 'eu-west-2'});
+
     let dynamodb = new AWS.DynamoDB.DocumentClient({apiVersion: '2012-10-08'});
 
     let stationData = StationData(dynamodb);
@@ -83,7 +90,6 @@ exports.handler = function (event, context, callback) {
     try {
         intentActions[intentName](stationData, event);
     } catch (err) {
-        console.error("Error: ", JSON.stringify(err, null, 2));
-        callback(null, {"speech": "Sorry, something went wrong. Try again!"})
+        errorResponse(err);
     }
 };

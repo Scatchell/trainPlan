@@ -146,10 +146,7 @@ describe("TrainStatus", function () {
                 }
             };
 
-            spyOn(requesterSpy, 'get').and.returnValue({
-                on: () => {
-                }
-            });
+            spyOn(requesterSpy, 'get');
         });
 
         it("should make request with correct details", function () {

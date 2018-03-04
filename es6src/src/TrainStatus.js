@@ -34,19 +34,14 @@ exports.TrainStatus = function () {
                 path: "/v3/uk/train/station/" + trainDetails.origin + "/live.json?app_id=" + appId + "&app_key=" + appKey + "&calling_at=" + trainDetails.destination + "&darwin=false&train_status=passenger"
             };
 
-            const req = requester.get(options, function (res) {
+            return requester.get(options, function (res) {
                 let bodyChunks = [];
                 res.on('data', function (chunk) {
                     bodyChunks.push(chunk);
                 }).on('end', function () {
                     const body = Buffer.concat(bodyChunks);
-                    //todo can we use a promise here instead of success function?
                     success(body);
                 })
-            });
-
-            req.on('error', function (e) {
-                console.error("Error in API request. Error JSON: ", JSON.stringify(e, null, 2));
             });
         },
         fromResponse: (responseBody, filterDetails) => {
