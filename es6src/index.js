@@ -1,6 +1,6 @@
 'use strict';
 const https = require('https');
-const TrainStatusParser = require('./src/TrainStatusParser').TrainStatusParser;
+const TrainStatus = require('./src/TrainStatus').TrainStatus;
 const StationData = require('./src/StationData').StationData;
 const AWS = require('aws-sdk');
 
@@ -18,35 +18,6 @@ exports.handler = function (event, context, callback) {
     console.log("event result:");
     console.log(event);
 
-    function respondWithTrainStatus(trainDetails) {
-        const appId = process.env.APP_ID;
-        const appKey = process.env.APP_KEY;
-
-        const options = {
-            host: 'transportapi.com',
-            path: "/v3/uk/train/station/" + trainDetails.origin + "/live.json?app_id=" + appId + "&app_key=" + appKey + "&calling_at=" + trainDetails.destination + "&darwin=false&train_status=passenger"
-        };
-
-        const req = https.get(options, function (res) {
-            let bodyChunks = [];
-            res.on('data', function (chunk) {
-                bodyChunks.push(chunk);
-            }).on('end', function () {
-                const body = Buffer.concat(bodyChunks);
-                callback(null, {
-                    "speech": TrainStatusParser().getTrainStatusFromResponse(body, {
-                        earlyTime: trainDetails.earlyTime,
-                        lateTime: trainDetails.lateTime
-                    })
-                });
-            })
-        });
-
-        req.on('error', function (e) {
-            console.error("Error in API request. Error JSON: ", JSON.stringify(e, null, 2));
-        });
-    }
-
     async function trainLateIntentAction(stationData) {
         let stationDetails;
 
@@ -55,14 +26,23 @@ exports.handler = function (event, context, callback) {
         } catch (err) {
             throw new Error("Unable to retrieve user details.", "RETRIEVE_USER_DETAILS_ERROR")
         }
-        respondWithTrainStatus({
+
+        const trainStatus = TrainStatus();
+        const success = (body) => {
+            callback(null, {
+                "speech": trainStatus.fromResponse(body, {
+                    earlyTime: stationDetails.earlyTime,
+                    lateTime: stationDetails.lateTime
+                })
+            });
+        };
+
+        trainStatus.respondWithTrainStatus({
             origin: stationDetails.origin,
             destination: stationDetails.destination,
             earlyTime: stationDetails.earlyTime,
             lateTime: stationDetails.lateTime
-        });
-        // ).catch(function (err) {
-        // });
+        }, https, success);
     }
 
     function trainSetUserTimeAction(stationData, event) {

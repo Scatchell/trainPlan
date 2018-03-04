@@ -1,7 +1,9 @@
 "use strict";
-const moment = require('moment')
+const moment = require('moment');
 
-exports.TrainStatusParser = function () {
+exports.TrainStatus = function () {
+    const that = this;
+
     function between(departureTime, earlyTime, lateTime) {
         let earlyTimeLimit = moment.utc(earlyTime, "HH:mm");
         let lateTimeLimit = moment.utc(lateTime, "HH:mm");
@@ -23,7 +25,31 @@ exports.TrainStatusParser = function () {
     }
 
     return {
-        getTrainStatusFromResponse: function (responseBody, filterDetails) {
+        respondWithTrainStatus: (trainDetails, requester, success) => {
+            const appId = process.env.APP_ID;
+            const appKey = process.env.APP_KEY;
+
+            const options = {
+                host: 'transportapi.com',
+                path: "/v3/uk/train/station/" + trainDetails.origin + "/live.json?app_id=" + appId + "&app_key=" + appKey + "&calling_at=" + trainDetails.destination + "&darwin=false&train_status=passenger"
+            };
+
+            const req = requester.get(options, function (res) {
+                let bodyChunks = [];
+                res.on('data', function (chunk) {
+                    bodyChunks.push(chunk);
+                }).on('end', function () {
+                    const body = Buffer.concat(bodyChunks);
+                    //todo can we use a promise here instead of success function?
+                    success(body);
+                })
+            });
+
+            req.on('error', function (e) {
+                console.error("Error in API request. Error JSON: ", JSON.stringify(e, null, 2));
+            });
+        },
+        fromResponse: (responseBody, filterDetails) => {
             let transportApiJsonRes = JSON.parse(responseBody);
 
             let allDepartures = transportApiJsonRes.departures.all;
@@ -33,7 +59,6 @@ exports.TrainStatusParser = function () {
             let filteredDepartures = allDepartures.filter(function (departure) {
                 return between(departure.aimed_departure_time, earlyTime, lateTime);
             });
-
 
             if (filteredDepartures.length === 0) {
                 return "There are no trains currently running between " + formatTime(earlyTime) + " and " + formatTime(lateTime);
